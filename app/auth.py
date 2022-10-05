@@ -1,7 +1,13 @@
 import functools
+from msilib import Table
 from operator import not_
 import random
 import re
+from select import select
+from site import USER_BASE
+from tkinter import INSERT
+from tkinter.tix import Select
+from turtle import update
 import flask
 from . import utils
 
@@ -28,15 +34,15 @@ def activate():
             
             db = get_db()
             attempt = db.execute(
-                QUERY, (number, utils.U_UNCONFIRMED)
+                --SELECT, (number, utils.U_UNCONFIRMED)
             ).fetchone()
 
             if attempt is not None:
                 db.execute(
-                    QUERY, (utils.U_CONFIRMED, attempt['id'])
+                    --UPDATE, (utils.U_CONFIRMED, attempt['id'])
                 )
                 db.execute(
-                    QUERY, (attempt['username'], attempt['password'], attempt['salt'], attempt['email'])
+                    --INSERT, (attempt['username'], attempt['password'], attempt['salt'], attempt['email'])
                 )
                 db.commit()
 
@@ -100,7 +106,7 @@ def register():
             number = hex(random.getrandbits(512))[2:]
 
             db.execute(
-                QUERY,
+                --INSERT TO Table USER,
                 (number, utils.U_UNCONFIRMED, username, hashP, salt, email)
             )
             db.commit()
@@ -144,7 +150,7 @@ def confirm():
                 flash('Password confirmation required')
                 return render_template('auth/change.html', number=authid)
 
-            if ? != password:
+            if  request.form['password'] != password:
                 flash('Both values should be the same')
                 return render_template('auth/change.html', number=authid)
 
@@ -155,17 +161,17 @@ def confirm():
 
             db = get_db
             attempt = db.execute(
-                QUERY, (authid, utils.F_ACTIVE)
+               --SELECT , (authid, utils.F_ACTIVE)
             ).fetchone()
             
             if attempt is not None:
                 db.execute(
-                    QUERY, (utils.F_INACTIVE, attempt['id'])
+                    --UPDATE, (utils.F_INACTIVE, attempt['id'])
                 )
                 salt = hex(random.getrandbits(128))[2:]
                 hashP = generate_password_hash(password + salt)   
                 db.execute(
-                    QUERY, (hashP, salt, attempt['userid'])
+                    --UPDATE, (hashP, salt, attempt['userid'])
                 )
                 db.commit()
                 return redirect(url_for('auth.login'))
@@ -189,7 +195,7 @@ def change():
             
             db = get_db
             attempt = db.execute(
-                QUERY, (number, utils.F_ACTIVE)
+                --SELECT, (number, utils.F_ACTIVE)
             ).fetchone()
             
             if attempt is not None:
@@ -216,18 +222,19 @@ def forgot():
 
             db = get_db()
             user = db.execute(
-                QUERY, (email,)
+                --Select, (email,)
             ).fetchone()
 
             if user is not None:
                 number = hex(random.getrandbits(512))[2:]
                 
                 db.execute(
-                    QUERY,
+                    --SELECT ,
                     (utils.F_INACTIVE, user['id'])
                 )
+             
                 db.execute(
-                    QUERY,
+                    --update,
                     (user['id'], number, utils.F_ACTIVE)
                 )
                 db.commit()
@@ -301,7 +308,7 @@ def load_logged_in_user():
         g.user = None
     else:
         g.user = get_db().execute(
-            QUERY, (user_id,)
+            --select, (user_id,)
         ).fetchone()
 
         
