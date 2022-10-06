@@ -1,13 +1,5 @@
 import functools
-from msilib import Table
-from operator import not_
 import random
-import re
-from select import select
-from site import USER_BASE
-from tkinter import INSERT
-from tkinter.tix import Select
-from turtle import update
 import flask
 from . import utils
 
@@ -34,15 +26,16 @@ def activate():
             
             db = get_db()
             attempt = db.execute(
-                --SELECT, (number, utils.U_UNCONFIRMED)
+                'Select * From activationlink Where challenge = ? and state = ?', (number, utils.U_UNCONFIRMED)
             ).fetchone()
 
             if attempt is not None:
                 db.execute(
-                    --UPDATE, (utils.U_CONFIRMED, attempt['id'])
+                    'Update activationlink Set state = ? Where id = ?', (utils.U_CONFIRMED, attempt['id'])
                 )
+
                 db.execute(
-                    --INSERT, (attempt['username'], attempt['password'], attempt['salt'], attempt['email'])
+                    'Insert into user (username, password, salt, email) Values(?,?,?,?)', (attempt['username'], attempt['password'], attempt['salt'], attempt['email'])
                 )
                 db.commit()
 
@@ -63,7 +56,7 @@ def register():
             password = request.form['password']
             email = request.form['email']
             
-            db = get_db
+            db = get_db()
             error = None
 
             if not username:
@@ -81,12 +74,12 @@ def register():
                 flash(error)
                 return render_template('auth/register.html')
 
-            if db.execute('SELECT id FROM user WHERE username =?', (username,)).fetchone() is not None:
+            if db.execute('Select id From user Where username = ?', (username,)).fetchone() is not None:
                 error = 'User {} is already registered.'.format(username)
                 flash(error)
                 return render_template('auth/register.html')
             
-            if ((not email) or (not utils.isEmailValid(email))):
+            if (not email or (not utils.isEmailValid(email))):
                 error =  'Email address invalid.'
                 flash(error)
                 return render_template('auth/register.html')
@@ -106,7 +99,7 @@ def register():
             number = hex(random.getrandbits(512))[2:]
 
             db.execute(
-                --INSERT TO Table USER,
+                'Insert into activationlink (challenge, state, username, password, salt, email)  Values(?,?,?,?,?,?)',
                 (number, utils.U_UNCONFIRMED, username, hashP, salt, email)
             )
             db.commit()
@@ -133,8 +126,8 @@ def confirm():
         if g.user:
             return redirect(url_for('inbox.show'))
 
-        if request.method =='POST': 
-            password = request.form['password']
+        if request.method == 'POST': 
+            password = request.form['password'] 
             password1 = request.form['password1']
             authid = request.form['authid']
 
@@ -150,7 +143,7 @@ def confirm():
                 flash('Password confirmation required')
                 return render_template('auth/change.html', number=authid)
 
-            if  request.form['password'] != password:
+            if password1 != password:
                 flash('Both values should be the same')
                 return render_template('auth/change.html', number=authid)
 
@@ -159,19 +152,19 @@ def confirm():
                 flash(error)
                 return render_template('auth/change.html', number=authid)
 
-            db = get_db
+            db = get_db()
             attempt = db.execute(
-               --SELECT , (authid, utils.F_ACTIVE)
+                'Select * From forgotlink Where userid = ? and state = ?', (authid, utils.F_ACTIVE)
             ).fetchone()
             
             if attempt is not None:
                 db.execute(
-                    --UPDATE, (utils.F_INACTIVE, attempt['id'])
+                    'Update forgotlink Set state = ? Where id = ?', (utils.F_INACTIVE, attempt['id'])
                 )
                 salt = hex(random.getrandbits(128))[2:]
                 hashP = generate_password_hash(password + salt)   
                 db.execute(
-                    --UPDATE, (hashP, salt, attempt['userid'])
+                    'Update user Set password = ?, salt = ? Where id = ?', (hashP, salt, attempt['userid'])
                 )
                 db.commit()
                 return redirect(url_for('auth.login'))
@@ -179,7 +172,7 @@ def confirm():
                 flash('Invalid')
                 return render_template('auth/forgot.html')
 
-        return render_template('auth/forgot.html')
+        return render_template('auth/forgot.html')  #####
     except:
         return render_template('auth/forgot.html')
 
@@ -190,12 +183,12 @@ def change():
         if g.user:
             return redirect(url_for('inbox.show'))
         
-        if request.method == ('GET', 'POST'): 
+        if request.method == 'GET': 
             number = request.args['auth'] 
             
-            db = get_db
+            db = get_db()
             attempt = db.execute(
-                --SELECT, (number, utils.F_ACTIVE)
+                'Select * From forgotlink Where challenge = ? and state = ?', (number, utils.F_ACTIVE)
             ).fetchone()
             
             if attempt is not None:
@@ -203,7 +196,7 @@ def change():
         
         return render_template('auth/forgot.html')
     except:
-        return render_template('auth/change.html')
+        return render_template('auth/forgot.html')
 
 
 @bp.route('/forgot', methods=('GET', 'POST'))
@@ -215,26 +208,25 @@ def forgot():
         if request.method == 'POST':
             email = request.form['email']
             
-            if ((not email) or (not utils.isEmailValid(email))):
+            if (not email or (not utils.isEmailValid(email))):
                 error = 'Email Address Invalid'
                 flash(error)
                 return render_template('auth/forgot.html')
 
             db = get_db()
             user = db.execute(
-                --Select, (email,)
+                'Select * from user Where email = ?', (email,)
             ).fetchone()
 
             if user is not None:
                 number = hex(random.getrandbits(512))[2:]
                 
                 db.execute(
-                    --SELECT ,
+                    'Update forgotlink Set state = ? Where userid = ?',
                     (utils.F_INACTIVE, user['id'])
                 )
-             
                 db.execute(
-                    --update,
+                    'Insert into forgotlink (userid, challenge, state) Values (?,?,?)',
                     (user['id'], number, utils.F_ACTIVE)
                 )
                 db.commit()
@@ -254,7 +246,7 @@ def forgot():
 
         return render_template('auth/forgot.html')
     except:
-        return render_template(TEMP)
+        return render_template('auth/forgot.html')
 
 
 @bp.route('/login', methods=('GET', 'POST'))
@@ -265,7 +257,7 @@ def login():
 
         if request.method == 'POST':
             username = request.form['username']
-            password = request.form['passwod']
+            password = request.form['password']
 
             if not username:
                 error = 'Username Field Required'
@@ -277,44 +269,44 @@ def login():
                 flash(error)
                 return render_template('auth/login.html')
 
-            db = get_db
+            db = get_db()
             error = None
             user = db.execute(
                 'SELECT * FROM user WHERE username = ?', (username,)
             ).fetchone()
             
-            if not username or password:
+            if user is None:
                 error = 'Incorrect username or password'
             elif not check_password_hash(user['password'], password + user['salt']):
                 error = 'Incorrect username or password'   
 
             if error is None:
                 session.clear()
-                session['user_id'] = user['username']
+                session['user_id'] = user['id']
                 return redirect(url_for('inbox.show'))
 
             flash(error)
 
-        return render_template('inbox.show')
+        return render_template('auth/login.htm')
     except:
         return render_template('auth/login.html')
         
 
 @bp.before_app_request
 def load_logged_in_user():
-    user_id = session.get_db()
+    user_id = session.get('user_id')
 
     if user_id is None:
         g.user = None
     else:
         g.user = get_db().execute(
-            --select, (user_id,)
+            'Select * From User Where id = ?', (user_id,)
         ).fetchone()
 
         
 @bp.route('/logout')
 def logout():
-    session.get_db()
+    session.clear()
     return redirect(url_for('auth.login'))
 
 
