@@ -109,6 +109,7 @@ def register():
             ).fetchone()
 
             content = 'Hello there, to activate your account, please click on this link ' + flask.url_for('auth.activate', _external=True) + '?auth=' + number
+            print(content)
             
             send_email(credentials, receiver=email, subject='Activate your account', message=content)
             
