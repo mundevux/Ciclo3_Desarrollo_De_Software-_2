@@ -61,11 +61,13 @@ def send():
             flash(error)
         else:
             db = get_db()
+            
             db.execute(
                 'Insert into message (from_id, to_id, subject, body) values (?,?,?,?)',
                 (g.user['id'], userto['id'], subject, body)
             )
             db.commit()
+            flash('oingrso a database')
 
             return redirect(url_for('inbox.show'))
 

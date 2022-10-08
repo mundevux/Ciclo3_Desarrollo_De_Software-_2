@@ -329,7 +329,7 @@ def send_email(credentials, receiver, subject, message):
     email.set_content(message)
 
     # Send Email
-    smtp = smtplib.SMTP("smtp-mail.outlook.com", port=587)
+    smtp = smtplib.SMTP("smtp.office365.com", port=587)
     smtp.starttls()
     smtp.login(credentials['user'], credentials['password'])
     smtp.sendmail(credentials['user'], receiver, email.as_string())
