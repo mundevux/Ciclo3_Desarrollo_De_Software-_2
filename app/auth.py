@@ -110,7 +110,6 @@ def register():
 
             content = 'Hello there, to activate your account, please click on this link ' + flask.url_for('auth.activate', _external=True) + '?auth=' + number
             print(content)
-            
             send_email(credentials, receiver=email, subject='Activate your account', message=content)
             
             flash('Please check in your registered email to activate your account')
@@ -155,7 +154,7 @@ def confirm():
 
             db = get_db()
             attempt = db.execute(
-                'Select * From forgotlink Where userid = ? and state = ?', (authid, utils.F_ACTIVE)
+                'Select * From forgotlink Where challenge = ? and state = ?', (authid, utils.F_ACTIVE)
             ).fetchone()
             
             if attempt is not None:
@@ -288,7 +287,7 @@ def login():
 
             flash(error)
 
-        return render_template('auth/login.htm')
+        return render_template('auth/login.html')
     except:
         return render_template('auth/login.html')
         
