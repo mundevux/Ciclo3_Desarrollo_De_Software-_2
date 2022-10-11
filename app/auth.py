@@ -158,6 +158,7 @@ def confirm():
             ).fetchone()
             
             if attempt is not None:
+                
                 db.execute(
                     'Update forgotlink Set state = ? Where id = ?', (utils.F_INACTIVE, attempt['id'])
                 )
@@ -236,7 +237,7 @@ def forgot():
                 ).fetchone()
                 
                 content = 'Hello there, to change your password, please click on this link ' + flask.url_for('auth.change', _external=True) + '?auth=' + number
-                
+                print(content)
                 send_email(credentials, receiver=email, subject='New Password', message=content)
                 
                 flash('Please check in your registered email')
