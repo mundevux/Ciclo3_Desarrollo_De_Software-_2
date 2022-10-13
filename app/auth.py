@@ -93,22 +93,23 @@ def register():
                 error = 'Password should contain at least a lowercase letter, an uppercase letter and a number with 8 characters long'
                 flash(error)
                 return render_template('auth/register.html')
-
+            
             salt = hex(random.getrandbits(128))[2:]
             hashP = generate_password_hash(password + salt)
             number = hex(random.getrandbits(512))[2:]
-
+            
             db.execute(
-                'Insert into activationlink (challenge, state, username, password, salt, email)  Values(?,?,?,?,?,?)',
+                'Insert into activationlink (challenge, state, username, password, salt, email)  Values(?,?,?,?,?,?) ',
                 (number, utils.U_UNCONFIRMED, username, hashP, salt, email)
             )
             db.commit()
-
+            
             credentials = db.execute(
-                'Select user,password from credentials where name=?', (utils.EMAIL_APP,)
+                'Select user, password from credentials where name=?', (utils.EMAIL_APP,)
             ).fetchone()
-
+            
             content = 'Hello there, to activate your account, please click on this link ' + flask.url_for('auth.activate', _external=True) + '?auth=' + number
+            
             print(content)
             send_email(credentials, receiver=email, subject='Activate your account', message=content)
             
@@ -116,7 +117,8 @@ def register():
             return render_template('auth/login.html') 
 
         return render_template('auth/register.html') 
-    except:
+    except Exception as e:
+        print(e)        
         return render_template('auth/register.html')
 
     
@@ -158,7 +160,6 @@ def confirm():
             ).fetchone()
             
             if attempt is not None:
-                
                 db.execute(
                     'Update forgotlink Set state = ? Where id = ?', (utils.F_INACTIVE, attempt['id'])
                 )
@@ -186,10 +187,9 @@ def change():
         
         if request.method == 'GET': 
             number = request.args['auth'] 
-            
             db = get_db()
             attempt = db.execute(
-                'Select * From forgotlink Where challenge = ? and state = ?', (number, utils.F_ACTIVE)
+                'Select * From forgotlink Where challenge = ? and state = ?', (number, utils.F_ACTIVE)  ####### cambio
             ).fetchone()
             
             if attempt is not None:
@@ -288,7 +288,7 @@ def login():
 
             flash(error)
 
-        return render_template('auth/login.html')
+        return render_template('auth/login.htm')
     except:
         return render_template('auth/login.html')
         
@@ -329,7 +329,8 @@ def send_email(credentials, receiver, subject, message):
     email.set_content(message)
 
     # Send Email
-    smtp = smtplib.SMTP("smtp.office365.com", port=587)
+    smtp = smtplib.SMTP("smtp.office365.com", port=587) #### se cambio esto
+    #smtp = smtplib.SMTP("smtp-mail.outlook.com", port=587) #### se cambio esto
     smtp.starttls()
     smtp.login(credentials['user'], credentials['password'])
     smtp.sendmail(credentials['user'], receiver, email.as_string())

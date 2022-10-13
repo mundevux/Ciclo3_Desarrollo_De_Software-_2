@@ -18,7 +18,8 @@ def getDB():
 def show():
     db = get_db()
     messages = db.execute(
-        'SELECT from_id, username, to_id, subject, body, created FROM message m, user u Where m.from_id = u.id and to_id = ?', (g.user['id'],)
+        #'SELECT * FROM message ' #### se cambio esto
+        'SELECT from_id, username, to_id, subject, body, created FROM message m, user u Where m.from_id = u.id and to_id = ?',(g.user['id'],) #### se cambio esto
     ).fetchall()
 
     return render_template('inbox/show.html', messages=messages)
@@ -51,7 +52,7 @@ def send():
         userto = None 
         
         userto = db.execute(
-            'Select * from user where username = ?', (to_username,)
+            'Select * from User where username = ?', (to_username,)
         ).fetchone()
         
         if userto is None:
